@@ -40,19 +40,19 @@
             <div class="col-9">
                 <div id="board">
                     <div class="row">
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
                     </div>
                     <div class="row">
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
                     </div>
                     <div class="row">
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
-                        <div class="col-3 border border-light"></div>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
+                        <button class="col-3 border border-light"></button>
                     </div>
                 </div>
             </div>
@@ -116,12 +116,40 @@
         const socket = io();
 
         const messages = document.querySelector("#messages");
+        const board = document.querySelector("#board");
 
         function addMessage(message) {
             const li = document.createElement("li")
             li.textContent = message;
 
             messages.appendChild(li);
+        }
+
+        function initBoard() {
+            const boardRows = board.children;
+
+            for (let i = 0; i < boardRows.length; i++) {
+                const buttons = boardRows[i].children;
+
+                for (let k = 0; k < buttons.length; k++) {
+                    buttons[k].addEventListener("click", () => {
+                        socket.emit("click cell", i, k);
+                    });
+                }
+            }
+        }
+
+        function updateBoard(cells) {
+            const boardRows = board.children;
+
+            for (let i = 0; i < boardRows.length; i++) {
+                const buttons = boardRows[i].children;
+
+                for (let k = 0; k < buttons.length; k++) {
+                    if (cells[i][k])
+                        buttons[k].textContent = cells[i][k];
+                }
+            }
         }
 
         const createRoomForm = document.querySelector("#createRoomForm");
@@ -150,23 +178,28 @@
 
         socket.on("room created", (name) => {
             addMessage(`Created room: ${name}`);
-        })
+        });
 
         socket.on("user joined", (name) => {
-            addMessage(`User has joined room: ${name}`)
+            addMessage(`User has joined room: ${name}`);
+            initBoard();
         });
 
         socket.on("room exists", (name) => {
-            addMessage(`Room already exists: ${name}`)
-        })
+            addMessage(`Room already exists: ${name}`);
+        });
 
         socket.on("no room", (name) => {
-            addMessage(`Room does not exist: ${name}`)
-        })
+            addMessage(`Room does not exist: ${name}`);
+        });
 
         socket.on("room full", (name) => {
-            addMessage(`Room is full: ${name}`)
-        })
+            addMessage(`Room is full: ${name}`);
+        });
+
+        socket.on("update board", (board) => {
+            updateBoard(board);
+        });
     </script>
 </body>
 </html>

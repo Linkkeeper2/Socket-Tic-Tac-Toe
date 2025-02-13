@@ -22,6 +22,55 @@ class Game {
             [null, null, null],
             [null, null, null]
         ];
+
+        this.turn = 1;
+        this.winner = null;
+    }
+
+    click(row, col, socket) {
+        if (this.turn === 1 && this.player1 === socket) {
+            if (!this.board[row][col]) {
+                this.board[row][col] = "O";
+                this.turn = 2;
+                io.to(socket.currentRoom).emit("update board", this.board);
+            }
+        }
+
+        else if (this.turn === 2 && this.player2 === socket) {
+            if (!this.board[row][col]) {
+                this.board[row][col] = "X";
+                this.turn = 1;
+                io.to(socket.currentRoom).emit("update board", this.board);
+            }
+        }
+    }
+
+    checkWin() {
+        let rowWin = this.checkRows();
+
+
+    }
+
+    checkRows() {
+        for (let r = 0; r < this.board.length; r++) {
+            let row = this.board[r];
+
+            if (row[0] === row[1] && row[1] === row[2]) {
+                if (row[0] === "O")
+                    this.winner = 1;
+
+                else
+                    this.winner = 2;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    checkCols() {
+        
     }
 
     static findGame(roomName) {
@@ -76,6 +125,13 @@ io.on("connection", (socket) => {
         else {
            socket.emit("no room", name);
         }
+    });
+
+    socket.on("click cell", (row, col) => {
+        let game = Game.findGame(socket.currentRoom);
+
+        if (game)
+            game.click(row, col, socket);
     });
 });
 
