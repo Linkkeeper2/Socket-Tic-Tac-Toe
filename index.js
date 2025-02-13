@@ -28,10 +28,13 @@ class Game {
     }
 
     click(row, col, socket) {
+        if (this.winner) return;
+
         if (this.turn === 1 && this.player1 === socket) {
             if (!this.board[row][col]) {
                 this.board[row][col] = "O";
                 this.turn = 2;
+                this.checkWin(this.player1);
                 io.to(socket.currentRoom).emit("update board", this.board);
             }
         }
@@ -40,28 +43,40 @@ class Game {
             if (!this.board[row][col]) {
                 this.board[row][col] = "X";
                 this.turn = 1;
+                this.checkWin(this.player2);
                 io.to(socket.currentRoom).emit("update board", this.board);
             }
         }
     }
 
-    checkWin() {
+    checkWin(player) {
         let rowWin = this.checkRows();
+        let colWin = this.checkCols();
+        let diagWin = this.checkDiags();
 
+        if (rowWin || colWin || diagWin) {
 
+            if (player === this.player1) {
+                this.winner = "O";
+            }
+
+            else {
+                this.winner = "X";
+            }
+
+            this.w
+
+            io.to(player.currentRoom).emit("win", this.winner);
+        }
     }
 
     checkRows() {
         for (let r = 0; r < this.board.length; r++) {
             let row = this.board[r];
 
+            if (!row[0]) continue;
+
             if (row[0] === row[1] && row[1] === row[2]) {
-                if (row[0] === "O")
-                    this.winner = 1;
-
-                else
-                    this.winner = 2;
-
                 return true;
             }
         }
@@ -70,7 +85,26 @@ class Game {
     }
 
     checkCols() {
-        
+        for (let c = 0; c < this.board[0].length; c++) {
+            let cells = [];
+
+            for (let r = 0; r < this.board.length; r++) {
+                cells.push(this.board[r][c]);
+            }
+
+            if (!cells[0]) continue;
+
+            if (cells[0] === cells[1] && cells[1] === cells[2])
+                return true;
+        }
+
+        return false;
+    }
+
+    checkDiags() {
+        if (!this.board[0][0] || !this.board[0][2]) return false;
+
+        return (this.board[0][0] === this.board[1][1] && this.board[1][1] === this.board[2][2]) || (this.board[0][2] === this.board[1][1] && this.board[1][1] === this.board[2][0]);
     }
 
     static findGame(roomName) {
