@@ -28,7 +28,7 @@ class Game {
     }
 
     click(row, col, socket) {
-        if (this.winner) return;
+        if (this.winner != null) return;
 
         if (this.turn === 1 && this.player1 === socket) {
             if (!this.board[row][col]) {
@@ -55,16 +55,11 @@ class Game {
         let diagWin = this.checkDiags();
 
         if (rowWin || colWin || diagWin) {
-
-            if (player === this.player1) {
+            if (player === this.player1)
                 this.winner = "O";
-            }
 
-            else {
+            else
                 this.winner = "X";
-            }
-
-            this.w
 
             io.to(player.currentRoom).emit("win", this.winner);
         }
@@ -102,9 +97,31 @@ class Game {
     }
 
     checkDiags() {
-        if (!this.board[0][0] || !this.board[0][2]) return false;
+        if (this.board[0][0]) {
+            if (this.board[0][0] === this.board[1][1] && this.board[1][1] === this.board[2][2])
+                return true;
+        }
 
-        return (this.board[0][0] === this.board[1][1] && this.board[1][1] === this.board[2][2]) || (this.board[0][2] === this.board[1][1] && this.board[1][1] === this.board[2][0]);
+        if (this.board[0][2]) {
+            if (this.board[0][2] === this.board[1][1] && this.board[1][1] === this.board[2][0])
+                return true;
+        }
+
+        return false;
+    }
+
+    reset(socket) {
+        if (socket === this.player2) return;
+
+        this.board = [
+            [null, null, null],
+            [null, null, null],
+            [null, null, null]
+        ];
+        this.turn = 1;
+        this.winner = null;
+
+        io.to(socket.currentRoom).emit("update board", this.board);
     }
 
     static findGame(roomName) {
@@ -166,6 +183,34 @@ io.on("connection", (socket) => {
 
         if (game)
             game.click(row, col, socket);
+    });
+
+    socket.on("leave room", (name) => {
+        if (socket.currentRoom === name) {
+            let game = Game.findGame(name);
+
+            io.to(name).emit("room left");
+            game.reset(game.player1);
+
+            if (game.player1) {
+                game.player1.currentRoom = undefined;
+                game.player1.leave(name);
+            }
+
+            if (game.player2) {
+                game.player2.currentRoom = undefined;
+                game.player2.leave(name);
+            }
+
+            games.splice(games.indexOf(game), 1);
+        }
+    });
+
+    socket.on("reset board", (name) => {
+        let game = Game.findGame(name);
+
+        if (game)
+            game.reset(socket);
     });
 });
 
